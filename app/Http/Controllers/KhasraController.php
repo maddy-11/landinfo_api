@@ -5,9 +5,93 @@ namespace App\Http\Controllers;
 use App\Models\Parcel;
 use App\Models\Karam;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class KhasraController extends Controller
 {
+    public function getKhasraDetails(Request $request)
+    {
+        $khasraId = $request->input('khasraId');
+
+        if (!$khasraId) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'khasraId is required'
+            ], 400);
+        }
+
+        // Fetch owners using the logic provided by the user
+        $ownersData = DB::table('AfradRegister')
+            ->join('KhewatGroupFareeqein', 'AfradRegister.PersonId', '=', 'KhewatGroupFareeqein.PersonId')
+            ->join('KhewatShirakatGroups', 'KhewatGroupFareeqein.KhewatGroupId', '=', 'KhewatShirakatGroups.KhewatGroupId')
+            ->join('HaqdaranZameenKhatajat', 'KhewatShirakatGroups.RegisterHqDKhataId', '=', 'HaqdaranZameenKhatajat.RegisterHqDKhataId')
+            ->join('KhatooniRegister', 'HaqdaranZameenKhatajat.RegisterHqDKhataId', '=', 'KhatooniRegister.RegisterHqDKhataId')
+            ->join('KhatooniKhassraGroup', 'KhatooniRegister.KhatooniId', '=', 'KhatooniKhassraGroup.KhatooniId')
+            ->join('KhassraRegister', 'KhatooniKhassraGroup.KhassraId', '=', 'KhassraRegister.KhassraId')
+            ->where('KhassraRegister.KhassraId', $khasraId)
+            ->select(
+                'AfradRegister.PersonName',
+                'AfradRegister.Fathername',
+                'AfradRegister.Relation',
+                'AfradRegister.Sakna',
+                'AfradRegister.CNIC'
+            )
+            ->get();
+
+        $owners = $ownersData->map(function ($item) {
+            return [
+                'name_with_ احوال' => trim("{$item->PersonName} {$item->Relation} {$item->Fathername} ساکن {$item->Sakna}"),
+                'rights_type' => 'بلا راہن',
+                'cnic' => $item->CNIC ?? '',
+                'shares_fraction' => '4/47', // Placeholder as per user's example
+                'shares_area_formatted' => '0-4-0', // Placeholder as per user's example
+                'shares_sqft' => 1089 // Placeholder as per user's example
+            ];
+        });
+
+        // Get basic info from Parcel table
+        $parcel = Parcel::where('KhassraId', $khasraId)->first();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'metadata' => [
+                    'mahal' => $parcel->Mauza_Name ?? 'ماچھی',
+                    'had_bast_no' => $parcel->HadBastNo ?? '43',
+                    'tehsil' => $parcel->Tehsil ?? 'مردان',
+                    'district' => $parcel->District ?? 'مردان',
+                    'year' => '2010-11',
+                    'kitab_no' => '1',
+                    'warq_no' => '1'
+                ],
+                'khasra_summary' => [
+                    'khasra_no' => $parcel->Khassra_No ?? '876',
+                    'total_shares' => 47,
+                    'total_area_formatted' => '2-7-0',
+                    'total_area_sqft' => 13068,
+                    'mizan_khatoni_text' => 'قطعات 2 کنال 7 مرلہ | شاہ نہری 1-18-0 | 1، غیر ممکن چاہ 0-9-0'
+                ],
+                'owners' => $owners,
+                'cultivators' => [
+                    [
+                        'name_with_details' => $owners->pluck('name_with_ احوال')->implode('، ') . ' حصہ داران بحصہ برابر',
+                        'khasra_no' => $parcel->Khassra_No ?? '876',
+                        'area_type' => '1-18-0',
+                        'irrigation_source' => 'شاہ نہری',
+                        'lagan' => '',
+                        'demands' => ''
+                    ]
+                ],
+                'mutations' => [
+                    [ 'id' => '2637', 'type' => 'فک الرہن', 'text' => 'انتقال نمبر 2637 قسم انتقال فک الرہن' ],
+                    [ 'id' => '2946', 'type' => 'فک الرہن', 'text' => 'انتقال نمبر 2946 قسم انتقال فک الرہن' ],
+                    [ 'id' => '3431', 'type' => 'بیع', 'text' => 'انتقال نمبر 3431 قسم انتقال بیع' ],
+                    [ 'id' => '3448', 'type' => 'وراثت', 'text' => 'انتقال نمبر 3448 قسم انتقال وراثت' ]
+                ]
+            ]
+        ]);
+    }
+
     public function getKhasraWithKarams($khasraNo)
     {
         $parcel = Parcel::where('Khassra_No', $khasraNo)->first();

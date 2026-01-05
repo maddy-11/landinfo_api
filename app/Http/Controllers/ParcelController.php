@@ -171,7 +171,7 @@ class ParcelController extends Controller
         // Support both POST (JSON) and GET (query params)
         $district = $request->input('district');
         $tehsil = $request->input('tehsil');
-        $mauza = $request->input('mauza');
+        $mauza = $request->input('mauza') ?? $request->input('mauza_name');
         
         if (!$district || !$tehsil || !$mauza) {
             return response()->json([
@@ -181,10 +181,10 @@ class ParcelController extends Controller
         }
 
         $query = Parcel::select('Khassra_No')
+            ->where('District', 'like', trim($district))
+            ->where('Tehsil', 'like', trim($tehsil))
+            ->where('Mauza_Name', 'like', trim($mauza))
             ->whereNotNull('Khassra_No')
-            ->where('District', $district)
-            ->where('Tehsil', $tehsil)
-            ->where('Mauza_Name', $mauza)
             ->distinct();
 
         $khasras = $query->orderBy('Khassra_No')

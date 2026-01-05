@@ -7,6 +7,7 @@ Route::get('/districts', [ParcelController::class, 'getDistricts']);
 Route::post('/tehsils', [ParcelController::class, 'getTehsils']);
 Route::post('/mauzas', [ParcelController::class, 'getMauzas']);
 Route::post('/khasras', [ParcelController::class, 'getKhasras']);
+Route::post('/khasra/details', [\App\Http\Controllers\KhasraController::class, 'getKhasraDetails']);
 Route::post('/parcels/filtered', [ParcelController::class, 'getFilteredParcels']);
 
 // Legacy GET routes for backward compatibility (if needed)
