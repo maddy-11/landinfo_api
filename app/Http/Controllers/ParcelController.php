@@ -161,6 +161,25 @@ class ParcelController extends Controller
     }
 
     /**
+     * Get ALL unique mauzas for fuzzy matching
+     * GET /api/all-mauzas
+     */
+    public function getMauzasList()
+    {
+        $mauzas = Parcel::select('Mauza_Name')
+            ->whereNotNull('Mauza_Name')
+            ->distinct()
+            ->pluck('Mauza_Name')
+            ->filter()
+            ->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => $mauzas
+        ]);
+    }
+
+    /**
      * Get khasras filtered by district, tehsil, and mauza
      * POST /api/khasras
      * Payload: { "district": "Kurram", "tehsil": "Upper Kurram", "mauza": "Alamsher" }
@@ -203,35 +222,52 @@ class ParcelController extends Controller
         ]);
     }
 
-    /**
-     * Get filtered parcels with optional filters
-     * POST /api/parcels/filtered
-     * Payload: { "district": "Kurram", "tehsil": "Upper Kurram", "mauza": "Alamsher", "khasra": "870" }
-     */
     public function getFilteredParcels(Request $request)
     {
         $query = Parcel::query();
 
         if ($request->filled('district')) {
-            $query->where('District', $request->district);
+            $query->where('District', 'like', '%' . trim($request->district) . '%');
         }
 
         if ($request->filled('tehsil')) {
-            $query->where('Tehsil', $request->tehsil);
+            $query->where('Tehsil', 'like', '%' . trim($request->tehsil) . '%');
         }
 
         if ($request->filled('mauza')) {
-            $query->where('Mauza_Name', $request->mauza);
+            $query->where('Mauza_Name', 'like', '%' . trim($request->mauza) . '%');
         }
 
         if ($request->filled('khasra')) {
-            // Convert khasra string to float for comparison with database decimal
-            // This handles formatted values like "870" matching "870.00" in database
-            $khasraValue = (float) $request->khasra;
-            $query->where('Khassra_No', $khasraValue);
+            // Handle khasra input which might have / or .
+            $khasraInput = trim($request->khasra);
+            
+            // If it's a numeric-only or decimal string
+            if (is_numeric(str_replace('/', '.', $khasraInput))) {
+                $khasraValue = (float) str_replace('/', '.', $khasraInput);
+                $query->where('Khassra_No', $khasraValue);
+            } else {
+                // Fallback for non-numeric khasra IDs if any
+                $query->where('Khassra_No', 'like', '%' . $khasraInput . '%');
+            }
         }
 
         $parcels = $query->get();
+        
+        // If no results and it was a mauza search, try to find "similar" mauzas to suggest or just return counts
+        if ($parcels->isEmpty() && $request->filled('mauza')) {
+             $similarMauzas = Parcel::where('Mauza_Name', 'like', substr(trim($request->mauza), 0, 3) . '%')
+                ->distinct()
+                ->pluck('Mauza_Name')
+                ->take(5);
+             
+             return response()->json([
+                'success' => false,
+                'message' => 'No parcels found. Did you mean: ' . $similarMauzas->implode(', ') . '?',
+                'suggestions' => $similarMauzas
+            ], 404);
+        }
+
         $geoJson = $this->parcelsToGeoJson($parcels);
 
         return response()->json([
