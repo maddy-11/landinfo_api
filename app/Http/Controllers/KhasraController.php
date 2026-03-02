@@ -11,7 +11,7 @@ class KhasraController extends Controller
 {
     public function getKhasraDetails(Request $request)
     {
-        $khasraId = $request->input('khasraId');
+        $khasraId = (int) $request->input('khasraId');
 
         if (!$khasraId) {
             return response()->json([

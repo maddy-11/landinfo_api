@@ -200,9 +200,9 @@ class ParcelController extends Controller
         }
 
         $query = Parcel::select('Khassra_No')
-            ->where('District', 'like', trim($district))
-            ->where('Tehsil', 'like', trim($tehsil))
-            ->where('Mauza_Name', 'like', trim($mauza))
+            ->where('District', 'ilike', trim($district))
+            ->where('Tehsil', 'ilike', trim($tehsil))
+            ->where('Mauza_Name', 'ilike', trim($mauza))
             ->whereNotNull('Khassra_No')
             ->distinct();
 
@@ -227,15 +227,15 @@ class ParcelController extends Controller
         $query = Parcel::query();
 
         if ($request->filled('district')) {
-            $query->where('District', 'like', '%' . trim($request->district) . '%');
+            $query->where('District', 'ilike', '%' . trim($request->district) . '%');
         }
 
         if ($request->filled('tehsil')) {
-            $query->where('Tehsil', 'like', '%' . trim($request->tehsil) . '%');
+            $query->where('Tehsil', 'ilike', '%' . trim($request->tehsil) . '%');
         }
 
         if ($request->filled('mauza')) {
-            $query->where('Mauza_Name', 'like', '%' . trim($request->mauza) . '%');
+            $query->where('Mauza_Name', 'ilike', '%' . trim($request->mauza) . '%');
         }
 
         if ($request->filled('khasra')) {
@@ -244,11 +244,11 @@ class ParcelController extends Controller
             
             // If it's a numeric-only or decimal string
             if (is_numeric(str_replace('/', '.', $khasraInput))) {
-                $khasraValue = (float) str_replace('/', '.', $khasraInput);
+                $khasraValue = (int) str_replace('/', '.', $khasraInput);
                 $query->where('Khassra_No', $khasraValue);
             } else {
                 // Fallback for non-numeric khasra IDs if any
-                $query->where('Khassra_No', 'like', '%' . $khasraInput . '%');
+                $query->where('Khassra_No', 'ilike', '%' . $khasraInput . '%');
             }
         }
 
@@ -256,7 +256,7 @@ class ParcelController extends Controller
         
         // If no results and it was a mauza search, try to find "similar" mauzas to suggest or just return counts
         if ($parcels->isEmpty() && $request->filled('mauza')) {
-             $similarMauzas = Parcel::where('Mauza_Name', 'like', substr(trim($request->mauza), 0, 3) . '%')
+             $similarMauzas = Parcel::where('Mauza_Name', 'ilike', substr(trim($request->mauza), 0, 3) . '%')
                 ->distinct()
                 ->pluck('Mauza_Name')
                 ->take(5);
