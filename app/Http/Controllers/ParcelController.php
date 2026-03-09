@@ -110,7 +110,7 @@ class ParcelController extends Controller
 
         $query = Parcel::select('Tehsil')
             ->whereNotNull('Tehsil')
-            ->where('District', $district)
+            ->where('District', 'ilike', trim($district))
             ->distinct();
 
         $tehsils = $query->orderBy('Tehsil')
@@ -145,8 +145,8 @@ class ParcelController extends Controller
 
         $query = Parcel::select('Mauza_Name')
             ->whereNotNull('Mauza_Name')
-            ->where('District', $district)
-            ->where('Tehsil', $tehsil)
+            ->where('District', 'ilike', trim($district))
+            ->where('Tehsil', 'ilike', trim($tehsil))
             ->distinct();
 
         $mauzas = $query->orderBy('Mauza_Name')
@@ -277,4 +277,3 @@ class ParcelController extends Controller
         ]);
     }
 }
-
