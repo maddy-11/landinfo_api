@@ -236,7 +236,15 @@ class ParcelController extends Controller
             $query->where('Tehsil', 'ilike', '%' . trim($tehsil) . '%');
         }
 
-        $mauza = $request->input('mauza') ?? $request->input('mauza_name') ?? $request->input('mauzaName');
+        $mauza = $request->input('mauza')
+            ?? $request->input('mauza_name')
+            ?? $request->input('mauzaName')
+            ?? $request->input('Mauza_Name')
+            ?? $request->input('MauzaName')
+            ?? $request->input('moza')
+            ?? $request->input('moza_name')
+            ?? $request->input('MozaName')
+            ?? $request->input('Moza_Name');
         if (is_string($mauza) && trim($mauza) !== '') {
             $query->where('Mauza_Name', 'ilike', '%' . trim($mauza) . '%');
         }
