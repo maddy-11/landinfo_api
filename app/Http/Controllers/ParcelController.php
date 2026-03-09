@@ -226,21 +226,25 @@ class ParcelController extends Controller
     {
         $query = Parcel::query();
 
-        if ($request->filled('district')) {
-            $query->where('District', 'ilike', '%' . trim($request->district) . '%');
+        $district = $request->input('district');
+        if (is_string($district) && trim($district) !== '') {
+            $query->where('District', 'ilike', '%' . trim($district) . '%');
         }
 
-        if ($request->filled('tehsil')) {
-            $query->where('Tehsil', 'ilike', '%' . trim($request->tehsil) . '%');
+        $tehsil = $request->input('tehsil');
+        if (is_string($tehsil) && trim($tehsil) !== '') {
+            $query->where('Tehsil', 'ilike', '%' . trim($tehsil) . '%');
         }
 
-        if ($request->filled('mauza')) {
-            $query->where('Mauza_Name', 'ilike', '%' . trim($request->mauza) . '%');
+        $mauza = $request->input('mauza') ?? $request->input('mauza_name') ?? $request->input('mauzaName');
+        if (is_string($mauza) && trim($mauza) !== '') {
+            $query->where('Mauza_Name', 'ilike', '%' . trim($mauza) . '%');
         }
 
-        if ($request->filled('khasra')) {
+        $khasra = $request->input('khasra');
+        if (is_string($khasra) && trim($khasra) !== '') {
             // Handle khasra input which might have / or .
-            $khasraInput = trim($request->khasra);
+            $khasraInput = trim($khasra);
             
             // If it's a numeric-only or decimal string
             if (is_numeric(str_replace('/', '.', $khasraInput))) {
@@ -255,8 +259,8 @@ class ParcelController extends Controller
         $parcels = $query->get();
         
         // If no results and it was a mauza search, try to find "similar" mauzas to suggest or just return counts
-        if ($parcels->isEmpty() && $request->filled('mauza')) {
-             $similarMauzas = Parcel::where('Mauza_Name', 'ilike', substr(trim($request->mauza), 0, 3) . '%')
+        if ($parcels->isEmpty() && is_string($mauza) && trim($mauza) !== '') {
+             $similarMauzas = Parcel::where('Mauza_Name', 'ilike', substr(trim($mauza), 0, 3) . '%')
                 ->distinct()
                 ->pluck('Mauza_Name')
                 ->take(5);
