@@ -110,7 +110,7 @@ class ParcelController extends Controller
 
         $query = Parcel::select('Tehsil')
             ->whereNotNull('Tehsil')
-            ->where('District', 'ilike', trim($district))
+            ->where('District', $district)
             ->distinct();
 
         $tehsils = $query->orderBy('Tehsil')
@@ -145,8 +145,8 @@ class ParcelController extends Controller
 
         $query = Parcel::select('Mauza_Name')
             ->whereNotNull('Mauza_Name')
-            ->where('District', 'ilike', trim($district))
-            ->where('Tehsil', 'ilike', trim($tehsil))
+            ->where('District', $district)
+            ->where('Tehsil', $tehsil)
             ->distinct();
 
         $mauzas = $query->orderBy('Mauza_Name')
@@ -228,12 +228,12 @@ class ParcelController extends Controller
 
         $district = $request->input('district');
         if (is_string($district) && trim($district) !== '') {
-            $query->where('District', 'ilike', '%' . trim($district) . '%');
+            $query->where('District', 'ilike', trim($district));
         }
 
         $tehsil = $request->input('tehsil');
         if (is_string($tehsil) && trim($tehsil) !== '') {
-            $query->where('Tehsil', 'ilike', '%' . trim($tehsil) . '%');
+            $query->where('Tehsil', 'ilike', trim($tehsil));
         }
 
         $mauza = $request->input('mauza')
@@ -246,7 +246,7 @@ class ParcelController extends Controller
             ?? $request->input('MozaName')
             ?? $request->input('Moza_Name');
         if (is_string($mauza) && trim($mauza) !== '') {
-            $query->where('Mauza_Name', 'ilike', '%' . trim($mauza) . '%');
+            $query->where('Mauza_Name', 'ilike', trim($mauza));
         }
 
         $khasra = $request->input('khasra');
@@ -260,7 +260,7 @@ class ParcelController extends Controller
                 $query->where('Khassra_No', $khasraValue);
             } else {
                 // Fallback for non-numeric khasra IDs if any
-                $query->where('Khassra_No', 'ilike', '%' . $khasraInput . '%');
+                $query->where('Khassra_No', 'ilike', $khasraInput);
             }
         }
 
@@ -289,3 +289,4 @@ class ParcelController extends Controller
         ]);
     }
 }
+
