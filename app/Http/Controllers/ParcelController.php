@@ -145,8 +145,8 @@ class ParcelController extends Controller
 
         $query = Parcel::select('Mauza_Name')
             ->whereNotNull('Mauza_Name')
-            ->where('District', $district)
-            ->where('Tehsil', $tehsil)
+            ->where('District', 'ilike', trim($district))
+            ->where('Tehsil', 'ilike', trim($tehsil))
             ->distinct();
 
         $mauzas = $query->orderBy('Mauza_Name')
@@ -237,6 +237,7 @@ class ParcelController extends Controller
         }
 
         $mauza = $request->input('mauza')
+            ?? $request->input('Mauza')
             ?? $request->input('mauza_name')
             ?? $request->input('mauzaName')
             ?? $request->input('Mauza_Name')
