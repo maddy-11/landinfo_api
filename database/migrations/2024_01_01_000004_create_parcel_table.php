@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('parcel', function (Blueprint $table) {
             $table->id();
             $table->integer('OBJECTID')->nullable();
-            $table->decimal('Khassra_No', 15, 2)->nullable();
+            $table->string('Khassra_No')->nullable();
             $table->string('Old_Khassr')->nullable();
             $table->string('Massavi_No')->nullable();
             $table->string('KhasraType')->nullable();
