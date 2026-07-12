@@ -9,12 +9,9 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $type = DB::getSchemaBuilder()->getColumnType('parcel', 'Khassra_No');
-        if ($type === 'decimal') {
-            Schema::table('parcel', function (Blueprint $table) {
-                $table->string('Khassra_No')->nullable()->change();
-            });
-        }
+        Schema::table('parcel', function (Blueprint $table) {
+            $table->string('Khassra_No')->nullable()->change();
+        });
     }
 
     public function down(): void

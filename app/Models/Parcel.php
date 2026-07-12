@@ -41,7 +41,6 @@ class Parcel extends Model
     {
         return [
             'geometry' => 'array',
-            'Khassra_No' => 'decimal:2',
             'KhassraId' => 'decimal:2',
             'MozaId' => 'decimal:2',
             'HadBastNo' => 'decimal:2',

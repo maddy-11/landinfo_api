@@ -7,6 +7,13 @@ use Illuminate\Http\Request;
 
 class ParcelController extends Controller
 {
+    private function whereInsensitive($query, string $column, string $value, string $operator = '=')
+    {
+        $wrapped = $query->getQuery()->getGrammar()->wrap($column);
+
+        return $query->whereRaw("LOWER({$wrapped}) {$operator} ?", [mb_strtolower(trim($value))]);
+    }
+
     private function formatKhasraNumber($value)
     {
         if ($value === null) {
@@ -145,9 +152,9 @@ class ParcelController extends Controller
 
         $query = Parcel::select('Mauza_Name')
             ->whereNotNull('Mauza_Name')
-            ->where('District', 'ilike', trim($district))
-            ->where('Tehsil', 'ilike', trim($tehsil))
             ->distinct();
+        $this->whereInsensitive($query, 'District', $district);
+        $this->whereInsensitive($query, 'Tehsil', $tehsil);
 
         $mauzas = $query->orderBy('Mauza_Name')
             ->pluck('Mauza_Name')
@@ -200,11 +207,11 @@ class ParcelController extends Controller
         }
 
         $query = Parcel::select('Khassra_No')
-            ->where('District', 'ilike', trim($district))
-            ->where('Tehsil', 'ilike', trim($tehsil))
-            ->where('Mauza_Name', 'ilike', trim($mauza))
             ->whereNotNull('Khassra_No')
             ->distinct();
+        $this->whereInsensitive($query, 'District', $district);
+        $this->whereInsensitive($query, 'Tehsil', $tehsil);
+        $this->whereInsensitive($query, 'Mauza_Name', $mauza);
 
         $khasras = $query->orderBy('Khassra_No')
             ->pluck('Khassra_No')
@@ -228,12 +235,12 @@ class ParcelController extends Controller
 
         $district = $request->input('district');
         if (is_string($district) && trim($district) !== '') {
-            $query->where('District', 'ilike', trim($district));
+            $this->whereInsensitive($query, 'District', $district);
         }
 
         $tehsil = $request->input('tehsil');
         if (is_string($tehsil) && trim($tehsil) !== '') {
-            $query->where('Tehsil', 'ilike', trim($tehsil));
+            $this->whereInsensitive($query, 'Tehsil', $tehsil);
         }
 
         $mauza = $request->input('mauza')
@@ -247,7 +254,7 @@ class ParcelController extends Controller
             ?? $request->input('MozaName')
             ?? $request->input('Moza_Name');
         if (is_string($mauza) && trim($mauza) !== '') {
-            $query->where('Mauza_Name', 'ilike', trim($mauza));
+            $this->whereInsensitive($query, 'Mauza_Name', $mauza);
         }
 
         $khasra = $request->input('khasra');
@@ -257,11 +264,20 @@ class ParcelController extends Controller
             
             // If it's a numeric-only or decimal string
             if (is_numeric(str_replace('/', '.', $khasraInput))) {
-                $khasraValue = (int) str_replace('/', '.', $khasraInput);
-                $query->where('Khassra_No', $khasraValue);
+                $khasraValue = str_replace('/', '.', $khasraInput);
+                // Khassra_No is stored as a string, possibly with trailing zeros
+                // ("876", "876.0", "876.00") — match the common variants.
+                $candidates = array_unique([
+                    $khasraInput,
+                    $khasraValue,
+                    $this->formatKhasraNumber($khasraValue),
+                    sprintf('%.1f', (float) $khasraValue),
+                    sprintf('%.2f', (float) $khasraValue),
+                ]);
+                $query->whereIn('Khassra_No', $candidates);
             } else {
                 // Fallback for non-numeric khasra IDs if any
-                $query->where('Khassra_No', 'ilike', $khasraInput);
+                $this->whereInsensitive($query, 'Khassra_No', $khasraInput);
             }
         }
 
@@ -269,8 +285,9 @@ class ParcelController extends Controller
         
         // If no results and it was a mauza search, try to find "similar" mauzas to suggest or just return counts
         if ($parcels->isEmpty() && is_string($mauza) && trim($mauza) !== '') {
-             $similarMauzas = Parcel::where('Mauza_Name', 'ilike', substr(trim($mauza), 0, 3) . '%')
-                ->distinct()
+             $similarQuery = Parcel::query()->distinct();
+             $this->whereInsensitive($similarQuery, 'Mauza_Name', substr(trim($mauza), 0, 3) . '%', 'LIKE');
+             $similarMauzas = $similarQuery
                 ->pluck('Mauza_Name')
                 ->take(5);
              
