@@ -19,9 +19,13 @@ class ParcelController extends Controller
         if ($value === null) {
             return null;
         }
-        // Convert to float and remove trailing zeros and decimal point if not needed
-        $num = (float) $value;
-        return rtrim(rtrim(sprintf('%.2f', $num), '0'), '.');
+        $value = trim((string) $value);
+        // Non-numeric khasras like "104/3" must pass through untouched
+        if (!is_numeric($value)) {
+            return $value;
+        }
+        // Remove trailing zeros and decimal point if not needed ("104.00" -> "104")
+        return rtrim(rtrim(sprintf('%.2f', (float) $value), '0'), '.');
     }
 
     private function parcelsToGeoJson($parcels)
@@ -215,11 +219,7 @@ class ParcelController extends Controller
 
         $khasras = $query->orderBy('Khassra_No')
             ->pluck('Khassra_No')
-            ->map(function ($khasra) {
-                // Convert to string and remove trailing zeros and decimal point if not needed
-                $khasra = (float) $khasra;
-                return rtrim(rtrim(sprintf('%.2f', $khasra), '0'), '.');
-            })
+            ->map(fn ($khasra) => $this->formatKhasraNumber($khasra))
             ->filter()
             ->values();
 
