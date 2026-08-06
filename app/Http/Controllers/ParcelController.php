@@ -217,10 +217,18 @@ class ParcelController extends Controller
         $this->whereInsensitive($query, 'Tehsil', $tehsil);
         $this->whereInsensitive($query, 'Mauza_Name', $mauza);
 
-        $khasras = $query->orderBy('Khassra_No')
-            ->pluck('Khassra_No')
+        $khasras = $query->pluck('Khassra_No')
             ->map(fn ($khasra) => $this->formatKhasraNumber($khasra))
             ->filter()
+            ->unique()
+            ->sort(function ($a, $b) {
+                // Natural sort: compare numeric parts, then sub-parts ("2/1" -> [2, 1])
+                $pa = array_map('floatval', explode('/', $a));
+                $pb = array_map('floatval', explode('/', $b));
+                return $pa[0] <=> $pb[0]
+                    ?: ($pa[1] ?? 0) <=> ($pb[1] ?? 0)
+                    ?: strcmp($a, $b);
+            })
             ->values();
 
         return response()->json([

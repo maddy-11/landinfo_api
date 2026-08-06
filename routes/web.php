@@ -4,7 +4,10 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\KhasraController;
 use App\Http\Controllers\ParcelController;
 
-Route::get('/', [ParcelController::class, 'index']);
+Route::get('/', function () {
+    return view('restricted');
+});
+
 Route::get('/test/{khasra_no}', [KhasraController::class, 'getKhasraWithKarams']);
 
 // Non-API routes (no /api prefix) for compatibility with clients using query strings
