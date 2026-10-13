@@ -289,10 +289,10 @@ class ParcelController extends Controller
             }
         }
 
-        $parcels = $query->get();
-        
+        $total = (clone $query)->count();
+
         // If no results and it was a mauza search, try to find "similar" mauzas to suggest or just return counts
-        if ($parcels->isEmpty() && is_string($mauza) && trim($mauza) !== '') {
+        if ($total === 0 && is_string($mauza) && trim($mauza) !== '') {
              $similarQuery = Parcel::query()->distinct();
              $this->whereInsensitive($similarQuery, 'Mauza_Name', substr(trim($mauza), 0, 3) . '%', 'LIKE');
              $similarMauzas = $similarQuery
@@ -306,13 +306,28 @@ class ParcelController extends Controller
             ], 404);
         }
 
-        $geoJson = $this->parcelsToGeoJson($parcels);
+        // A whole district is 50k+ parcels with geometry — far too much to build as
+        // models in memory. Stream the same JSON the GeoJSON helper would produce.
+        return response()->stream(function () use ($query, $total) {
+            echo '{"success":true,"data":{"type":"FeatureCollection","features":[';
+            $first = true;
+            foreach ($query->toBase()->cursor() as $row) {
+                $attributes = (array) $row;
+                $geometry = $attributes['geometry'] === null ? null : json_decode($attributes['geometry'], true);
+                unset($attributes['id'], $attributes['created_at'], $attributes['updated_at'], $attributes['geometry']);
+                if (array_key_exists('Khassra_No', $attributes)) {
+                    $attributes['Khassra_No'] = $this->formatKhasraNumber($attributes['Khassra_No']);
+                }
 
-        return response()->json([
-            'success' => true,
-            'data' => $geoJson,
-            'count' => count($geoJson['features'])
-        ]);
+                echo ($first ? '' : ','), json_encode([
+                    'type' => 'Feature',
+                    'properties' => $attributes,
+                    'geometry' => $geometry,
+                ]);
+                $first = false;
+            }
+            echo ']},"count":', $total, '}';
+        }, 200, ['Content-Type' => 'application/json']);
     }
 }
 
