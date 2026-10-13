@@ -45,7 +45,18 @@ JOIN (
     FROM master.v_rural_hierarchy h
     JOIN master.mouza m USING (province_code, division_code, district_code, tehsil_code, mouza_code)
     OFFSET 0
-) h ON h.mouza_uid = concat_ws('-', b.province_code, b.division_code, b.district_code, b.tehsil_code, b.mouza_code);
+) h ON h.mouza_uid = concat_ws('-', b.province_code, b.division_code, b.district_code, b.tehsil_code, b.mouza_code)
+UNION ALL
+-- Test parcels (Kurram, Peshawar, Bajaur) that have no place in the client's
+-- master hierarchy; kept separately in lrmis.parcel, already in API shape.
+SELECT
+    p.id, p."OBJECTID", p."Khassra_No", p."Old_Khassr", p."Massavi_No", p."KhasraType",
+    p."Mauza_Name", p."PC_Name", p."KhassraId", p."MozaId", p."JamaBandiY", p."HadBastNo",
+    p."MozaName_U", p."KhataNo", p."Status", p."UC", p."Tehsil", p."District", p."Division",
+    p."Province", p."Shape_Leng", p."Shape_Le_1", p."Shape_Area",
+    NULL::varchar, NULL::numeric,
+    p.geometry, p.created_at, p.updated_at
+FROM lrmis.parcel p;
 
 CREATE OR REPLACE VIEW api.control_point AS
 SELECT
