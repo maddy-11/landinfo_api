@@ -100,8 +100,13 @@ class KhasraController extends Controller
             return view('khasra.notfound', ['khasra_no' => $khasraNo]);
         }
 
-        $allKarams = Karam::all();
-        $matchingKarams = $allKarams->filter(function($karam) use ($parcel) {
+        // Narrow to karams touching the parcel in PostGIS before the exact check;
+        // loading every karam (600k+) into PHP is not viable.
+        $candidateKarams = Karam::whereRaw(
+            'ST_Intersects(geom, (SELECT geom FROM cadastre_rural.rural_parcel_boundary WHERE objectid = ?))',
+            [$parcel->id]
+        )->get();
+        $matchingKarams = $candidateKarams->filter(function($karam) use ($parcel) {
             return $this->lineIntersectsOrContainedInPolygon(
                 $karam->geometry,
                 $parcel->geometry

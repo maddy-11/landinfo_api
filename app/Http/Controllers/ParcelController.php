@@ -121,8 +121,8 @@ class ParcelController extends Controller
 
         $query = Parcel::select('Tehsil')
             ->whereNotNull('Tehsil')
-            ->where('District', $district)
             ->distinct();
+        $this->whereInsensitive($query, 'District', $district);
 
         $tehsils = $query->orderBy('Tehsil')
             ->pluck('Tehsil')
