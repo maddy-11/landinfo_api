@@ -19,6 +19,10 @@ Route::match(['get', 'post'], '/levels/filtered', [ControlPointController::class
 Route::match(['get', 'post'], '/levels/{level}', [ControlPointController::class, 'getByLevel'])
     ->where('level', '[0-9]+');
 
+// Administrative boundaries: division | district | tehsil | mouza
+Route::match(['get', 'post'], '/admin-units/{level}', [\App\Http\Controllers\AdminUnitController::class, 'index'])
+    ->where('level', '[a-z]+');
+
 // Legacy GET routes for backward compatibility (if needed)
 Route::get('/parcels/filtered', [ParcelController::class, 'getFilteredParcels']);
 Route::get('/tehsils', [ParcelController::class, 'getTehsils']);
